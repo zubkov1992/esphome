@@ -1,0 +1,107 @@
+substitutions:
+    devicename: kettle
+    platform: ESP8266
+    board: nodemcuv2
+    sda_pin: D2
+    scl_pin: D1
+
+logger:
+
+<< : !include .common.yaml
+
+i2c:
+    sda: $sda_pin
+    scl: $scl_pin
+    scan: false
+
+wifi:
+    ssid: !secret wifi_ssid
+    password: !secret wifi_passwd
+    fast_connect: true
+
+mcp23017:
+    id: 'mcp23017_hub'
+    address: 0x20
+
+switch:
+  - platform: gpio
+    name: "Relay"
+    pin:
+        mcp23xxx: mcp23017_hub
+        number: 6
+        inverted: true
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    name: "Buzz"
+    pin:
+        mcp23xxx: mcp23017_hub
+        number: 7
+    restore_mode: ALWAYS_OFF
+
+light:
+    - platform: binary
+      name: "Led 60"
+      output: led_60
+      restore_mode: ALWAYS_OFF
+    - platform: binary
+      name: "Led 70"
+      output: led_70
+      restore_mode: ALWAYS_OFF
+    - platform: binary
+      name: "Led 80"
+      output: led_80
+      restore_mode: ALWAYS_OFF
+    - platform: binary
+      name: "Led 90"
+      output: led_90
+      restore_mode: ALWAYS_OFF
+    - platform: binary
+      name: "Led red"
+      output: led_red
+      restore_mode: ALWAYS_OFF
+    - platform: binary
+      name: "Led green"
+      output: led_green
+      restore_mode: ALWAYS_OFF
+    - platform: binary
+      name: "Led blue"
+      output: led_blue
+      restore_mode: ALWAYS_OFF
+
+output:
+    - platform: gpio
+      id: led_60
+      pin:
+        mcp23xxx: mcp23017_hub
+        number: 0
+        inverted: true
+    - platform: gpio
+      id: led_70
+      pin:
+        mcp23xxx: mcp23017_hub
+        number: 1
+        inverted: true
+    - platform: gpio
+      id: led_80
+      pin:
+        mcp23xxx: mcp23017_hub
+        number: 2
+        inverted: true
+    - platform: gpio
+      id: led_90
+      pin:
+        mcp23xxx: mcp23017_hub
+        number: 3
+        inverted: true
+    - platform: gpio
+      id: led_red
+      pin: D5
+      inverted: true
+    - platform: gpio
+      id: led_green
+      pin: D6
+      inverted: true
+    - platform: gpio
+      id: led_blue
+      pin: D7
+      inverted: true

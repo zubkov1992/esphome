@@ -1,0 +1,537 @@
+substitutions:
+  devicename: main_controller_bedroom
+  platform: ESP32
+  board: nodemcu-32s
+  sda_pin: GPIO21
+  scl_pin: GPIO22
+
+globals:
+  - id: encoder_mode_id
+    type: int
+    initial_value: '0'
+  - id: save_state_bedroom_led_strips_ceiling
+    type: bool
+    restore_value: yes
+  - id: save_state_bedroom_led_lamp_wall_left
+    type: bool
+    restore_value: yes
+  - id: save_state_bedroom_led_lamp_wall_right
+    type: bool
+    restore_value: yes
+  - id: timer
+    type: uint32_t
+
+#возвращение дисплея и энкодера в начальное состояние
+interval:
+  - interval: 0.5min
+    then:
+      lambda: |-
+        if (id(timer) != 0 && millis() - id(timer) >= 35000) {
+          id(encoder_mode_id) = 0;
+          id(timer) = 0;
+          id(oled_display).show_page(id(page_main));
+          ESP_LOGD("main", "Encoder mode is: %d", id(encoder_mode_id));
+        }
+
+logger:
+
+<< : !include .common.yaml
+<< : !include .common_main_controller.yaml
+
+light:
+# СВД лента
+  - platform: cwww
+    id: 'bedroom_led_strips_ceiling'
+    name: "bedroom led strips ceiling"
+    cold_white: pca9685_channel0
+    warm_white: pca9685_channel1
+    cold_white_color_temperature: 6536 K
+    warm_white_color_temperature: 2703 K
+  - platform: monochromatic
+    id: 'bedroom_led_lamp_wall_left'
+    name: "bedroom led lamp wall left"
+    output: pca9685_channel2
+  - platform: monochromatic
+    id: 'bedroom_led_lamp_wall_right'
+    name: "bedroom led lamp wall right"
+    output: pca9685_channel3
+
+binary_sensor:
+  # статус соединения
+  - platform: status
+    id: status_connect
+    internal : true
+  # выключатель лево
+  - platform: gpio
+    id: 'switch_left'
+    internal : true
+    pin:
+      number: GPIO32
+    on_state:
+      then:
+        - light.toggle: bedroom_led_lamp_wall_left
+    # выключатель право
+  - platform: gpio
+    id: 'switch_right'
+    internal : true
+    pin:
+      number: GPIO33
+    on_state:
+      then:
+        - light.toggle: bedroom_led_lamp_wall_right
+  # датчик движения 
+  - platform: gpio
+    pin: GPIO17
+    name: "bedroom pir"
+    id: bedroom_pir
+    device_class: motion
+  # проверка включености освещения
+  - platform: template
+    id: 'is_on_light'
+    name: "is on light"
+    internal: True
+    lambda: |-
+      if (id(bedroom_led_strips_ceiling).remote_values.is_on()) return true;
+      if (id(bedroom_led_lamp_wall_left).remote_values.is_on()) return true;
+      if (id(bedroom_led_lamp_wall_right).remote_values.is_on()) return true;
+      return false;
+  # проверка включености
+  - platform: template
+    id: 'is_on'
+    name: "is on"
+    internal: True
+    lambda: |-
+      if (id(bedroom_relay1).state) return true;
+      if (id(bedroom_relay2).state) return true;
+      if (id(bedroom_relay3).state) return true;
+      if (id(bedroom_relay4).state) return true;
+      if (id(bedroom_relay5).state) return true;
+      return false;
+
+
+  # кнопка на энкодере
+  - platform: gpio
+    id: 'rotay_encoder_button'
+    name: "rotary encoder button"
+    pin: 
+      number: GPIO4
+      inverted: True
+    internal: True
+    on_multi_click:
+    #двойной клик
+    - timing:
+        - ON for at most 1s
+        - OFF for at most 1s
+        - ON for at most 1s
+        - OFF for at least 0.5s
+      then:
+        lambda: |-
+          if (id(encoder_mode_id) < 4) id(encoder_mode_id) += 1; else id(encoder_mode_id) = 0;
+          if (id(encoder_mode_id) == 4) id(encoder).set_value(0);
+
+          switch(id(encoder_mode_id)) 
+          {
+            case 0: 
+              id(oled_display).show_page(id(page_0));
+              break;
+
+            case 1: 
+              id(oled_display).show_page(id(page_1));
+              break;
+
+            case 2:
+              id(oled_display).show_page(id(page_2));
+              break;
+
+            case 3:
+              id(oled_display).show_page(id(page_3));
+              break;
+
+            case 4:
+              id(oled_display).show_page(id(page_4));
+              break;
+          }
+
+          id(timer) = millis();
+
+          ESP_LOGD("main", "Encoder mode is: %d", id(encoder_mode_id));
+    # тройной клик
+    - timing:
+        - ON for at most 1s
+        - OFF for at most 1s
+        - ON for at most 1s
+        - OFF for at most 1s
+        - ON for at most 1s
+        - OFF for at least 0.5s
+      then:
+        lambda: |-
+          if (id(encoder_mode_id) > 0) id(encoder_mode_id) -= 1; else id(encoder_mode_id) = 4;
+          if (id(encoder_mode_id) == 4) id(encoder).set_value(0);
+
+          switch(id(encoder_mode_id)) 
+          {
+            case 0: 
+              id(oled_display).show_page(id(page_0));
+              break;
+
+            case 1: 
+              id(oled_display).show_page(id(page_1));
+              break;
+
+            case 2:
+              id(oled_display).show_page(id(page_2));
+              break;
+
+            case 3:
+              id(oled_display).show_page(id(page_3));
+              break;
+
+            case 4:
+              id(oled_display).show_page(id(page_4));
+              break;
+          }
+
+          id(timer) = millis();
+
+          ESP_LOGD("main", "Encoder mode is: %d", id(encoder_mode_id));
+    # короткое нажатие
+    - timing:
+        - ON for at most 1s
+        - OFF for at least 0.5s
+      then:
+        lambda: |-
+          switch(id(encoder_mode_id)) {
+            case 0: { 
+              auto call = id(bedroom_led_strips_ceiling).toggle();
+              call.perform();
+
+              id(oled_display).show_page(id(page_0));
+              id(timer) = millis();
+            }
+            break;
+
+            case 1: { 
+              auto call = id(bedroom_led_strips_ceiling).toggle();
+              call.perform();
+
+              id(oled_display).show_page(id(page_1));
+              id(timer) = millis();
+            }
+            break;
+
+            case 2: {
+              auto call = id(bedroom_led_lamp_wall_left).toggle();
+              call.perform();
+
+              id(oled_display).show_page(id(page_2));
+              id(timer) = millis();
+            }
+            break;
+
+            case 3: {
+              auto call = id(bedroom_led_lamp_wall_right).toggle();
+              call.perform();
+
+              id(oled_display).show_page(id(page_3));
+              id(timer) = millis();
+            }
+            break;
+
+            case 4: {
+              if(id(encoder).state == 0) id(bedroom_relay1).toggle();
+              if(id(encoder).state == 1) id(bedroom_relay2).toggle();
+              if(id(encoder).state == 2) id(bedroom_relay3).toggle();
+              if(id(encoder).state == 3) id(bedroom_relay4).toggle();
+              if(id(encoder).state == 4) id(bedroom_relay5).toggle();
+
+              id(oled_display).show_page(id(page_4));
+              id(timer) = millis();
+            }
+          }
+    # длинное нажатие
+    - timing:
+        - ON for 1s to 2s
+        - OFF for at least 0.5s
+      then:
+        switch.toggle: 'bedroom_full_turn_off_light'
+        
+
+sensor:
+  # датчик освещения
+  - platform: bh1750
+    name: "bedroom illuminance"
+    id: bedroom_illuminance
+    update_interval: 60s
+  # датчик владности и температуры
+  - platform: htu21d
+    temperature:
+      name: "bedroom temperature"
+      id: bedroom_temperature
+    humidity:
+      name: "bedroom humidity"
+      id: bedroom_humidity
+    update_interval: 60s
+  # энкодер
+  - platform: rotary_encoder
+    name: "rotary Encoder"
+    id: 'encoder'
+    pin_a: GPIO2
+    pin_b: GPIO15
+    min_value: 10
+    max_value: 100
+    resolution: 4
+    internal: True
+    on_value:
+      then:
+        lambda: |-
+          id(timer) = millis();
+          float state = round(id(encoder).state);
+
+          switch(id(encoder_mode_id)) {
+
+            case 0: {
+              id(encoder).set_resolution(rotary_encoder::ROTARY_ENCODER_4_PULSES_PER_CYCLE);
+              id(encoder).set_min_value(10);
+              id(encoder).set_max_value(100);
+
+              float brightness = round(id(bedroom_led_strips_ceiling).remote_values.get_brightness()*100.0f);
+              auto call = id(bedroom_led_strips_ceiling).make_call();
+
+              if (!id(bedroom_led_strips_ceiling).remote_values.is_on()) break;
+
+
+              if (fabs(brightness - state) <= 15 || brightness == state) {
+                call.set_brightness(id(encoder).state/100);
+                call.perform();
+              } else {
+                id(encoder).set_value(brightness);
+              }
+            }
+            break;
+
+            case 1: {
+              id(encoder).set_resolution(rotary_encoder::ROTARY_ENCODER_4_PULSES_PER_CYCLE);
+              id(encoder).set_min_value(152);
+              id(encoder).set_max_value(370);
+
+              float temp = round(id(bedroom_led_strips_ceiling).remote_values.get_color_temperature());
+              auto call = id(bedroom_led_strips_ceiling).make_call();
+
+              if (!id(bedroom_led_strips_ceiling).remote_values.is_on()) break;
+
+              if (fabs(temp - state) <= 15 || temp == state) {
+                call.set_color_temperature(id(encoder).state);
+                call.perform();
+              } else {
+                id(encoder).set_value(temp);
+              }
+            }
+            break;
+
+            case 2: {
+              id(encoder).set_resolution(rotary_encoder::ROTARY_ENCODER_4_PULSES_PER_CYCLE);
+              id(encoder).set_min_value(10);
+              id(encoder).set_max_value(100);
+
+              float brightness = round(id(bedroom_led_lamp_wall_left).remote_values.get_brightness()*100.0f);
+              auto call = id(bedroom_led_lamp_wall_left).make_call();
+
+              if (!id(bedroom_led_lamp_wall_left).remote_values.is_on()) break;
+
+              if (fabs(brightness - state) <= 15 || brightness == state) {
+                call.set_brightness(id(encoder).state/100);
+                call.perform();
+              } else {
+                id(encoder).set_value(brightness);
+              }
+            }
+            break;
+            
+            case 3: {
+              id(encoder).set_resolution(rotary_encoder::ROTARY_ENCODER_4_PULSES_PER_CYCLE);
+              id(encoder).set_min_value(10);
+              id(encoder).set_max_value(100);
+
+              float brightness = round(id(bedroom_led_lamp_wall_right).remote_values.get_brightness()*100.0f);
+              auto call = id(bedroom_led_lamp_wall_right).make_call();
+
+              if (!id(bedroom_led_lamp_wall_right).remote_values.is_on()) break;
+
+              if (fabs(brightness - state) <= 15 || brightness == state) {
+                call.set_brightness(id(encoder).state/100);
+                call.perform();
+              } else {
+                id(encoder).set_value(brightness);
+              }
+            }
+            break;
+
+            case 4: {
+              id(encoder).set_resolution(rotary_encoder::ROTARY_ENCODER_1_PULSE_PER_CYCLE);
+              id(encoder).set_min_value(0);
+              id(encoder).set_max_value(4);
+            }
+            break;
+          }
+
+display:
+  - platform: ssd1306_i2c
+    id: oled_display
+    model: "SH1106 128x32"
+    pages:
+      - id: page_main
+        lambda: |-
+          if (id(status_connect).state) {
+            it.strftime(0, 28, id(display_font_33), TextAlign::BASELINE_LEFT, "%H:%M", id(homeassistant_time).now());
+            if (id(bedroom_temperature).has_state()) it.printf(97, 28, id(display_font_14), TextAlign::BASELINE_LEFT, "%2.0fC", id(bedroom_temperature).state);
+          } else {
+            it.print(5, 10, id(display_font_20), "no connect");
+          }
+
+      - id: page_0
+        lambda: |-
+          it.print(3, 12, id(display_font_14), TextAlign::BASELINE_LEFT, "ceiling brightness:");
+          it.printf(3, 30, id(display_font_14), TextAlign::BASELINE_LEFT, "%3.0f%%", id(bedroom_led_strips_ceiling).remote_values.is_on() ? round(id(bedroom_led_strips_ceiling).remote_values.get_brightness()*100.0f) : 0);
+
+      - id: page_1
+        lambda: |-
+          it.print(3, 12, id(display_font_14), TextAlign::BASELINE_LEFT, "ceiling temperature:");
+          it.printf(3, 30, id(display_font_14), TextAlign::BASELINE_LEFT, "%3.0fK", id(bedroom_led_strips_ceiling).remote_values.is_on() ? 1000000/id(bedroom_led_strips_ceiling).remote_values.get_color_temperature() : 0);
+
+      - id: page_2
+        lambda: |-
+          it.print(3, 12, id(display_font_14), TextAlign::BASELINE_LEFT, "wall left brightness:");
+          it.printf(3, 30, id(display_font_14), TextAlign::BASELINE_LEFT, "%3.0f%%", id(bedroom_led_lamp_wall_left).remote_values.is_on() ? round(id(bedroom_led_lamp_wall_left).remote_values.get_brightness()*100.0f) : 0);
+
+      - id: page_3
+        lambda: |-
+          it.print(3, 12, id(display_font_14), TextAlign::BASELINE_LEFT, "wall right brightness:");
+          it.printf(3, 30, id(display_font_14), TextAlign::BASELINE_LEFT, "%3.0f%%", id(bedroom_led_lamp_wall_right).remote_values.is_on() ? round(id(bedroom_led_lamp_wall_right).remote_values.get_brightness()*100.0f) : 0);
+
+      - id: page_4
+        lambda: |-
+              if(id(encoder).state == 0) it.printf(3, 12, id(display_font_14), TextAlign::BASELINE_LEFT, "power bed left: %s ", id(bedroom_relay1).state ? "on" : "off");
+              if(id(encoder).state == 1) it.printf(3, 12, id(display_font_14), TextAlign::BASELINE_LEFT, "power bed right: %s ", id(bedroom_relay2).state ? "on" : "off");
+              if(id(encoder).state == 2) it.printf(3, 12, id(display_font_14), TextAlign::BASELINE_LEFT, "power wall tv: %s ", id(bedroom_relay3).state ? "on" : "off");
+              if(id(encoder).state == 3) it.printf(3, 12, id(display_font_14), TextAlign::BASELINE_LEFT, "power commode : %s ", id(bedroom_relay4).state ? "on" : "off");
+              if(id(encoder).state == 4) it.printf(3, 12, id(display_font_14), TextAlign::BASELINE_LEFT, "power humidifier : %s ", id(bedroom_relay5).state ? "on" : "off");
+
+switch:
+# Реле
+  - platform: gpio
+    id: 'bedroom_relay1'
+    name: "bedroom power bed left"
+    icon: "mdi:power-socket-eu"
+    restore_mode: RESTORE_DEFAULT_ON
+    pin:
+      mcp23017: mcp23017_hub
+      number: 0
+  - platform: gpio
+    id: 'bedroom_relay2'
+    name: "bedroom power bed right"
+    icon: "mdi:power-socket-eu"
+    restore_mode: RESTORE_DEFAULT_ON
+    pin:
+      mcp23017: mcp23017_hub
+      number: 1
+  - platform: gpio
+    id: 'bedroom_relay3'
+    name: "bedroom power wall tv"
+    icon: "mdi:power-socket-eu"
+    restore_mode: RESTORE_DEFAULT_ON
+    pin:
+      mcp23017: mcp23017_hub
+      number: 2
+  - platform: gpio
+    id: 'bedroom_relay4'
+    name: "bedroom power commode"
+    icon: "mdi:power-socket-eu"
+    restore_mode: RESTORE_DEFAULT_ON
+    pin:
+      mcp23017: mcp23017_hub
+      number: 3
+  - platform: gpio
+    id: 'bedroom_relay5'
+    name: "bedroom power humidifier"
+    icon: "mdi:air-humidifier"
+    restore_mode: RESTORE_DEFAULT_ON
+    pin:
+     mcp23017: mcp23017_hub
+     number: 4
+     inverted: yes
+
+# переключатель всего освещения
+  - platform: template
+    id: 'bedroom_full_turn_off_light'
+    name: "bedroom full turn off light"
+    icon: "mdi:lightbulb-multiple"
+    lambda: |-
+      if (id(is_on_light).state) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_off_action:
+      lambda: |-
+        id(save_state_bedroom_led_strips_ceiling)=false;
+        if (id(bedroom_led_strips_ceiling).remote_values.is_on()) {
+          auto call = id(bedroom_led_strips_ceiling).turn_off();
+          call.perform();
+          id(save_state_bedroom_led_strips_ceiling)=true;
+        }
+        id(save_state_bedroom_led_lamp_wall_left)=false;
+        if (id(bedroom_led_lamp_wall_left).remote_values.is_on()) {
+          auto call_2 = id(bedroom_led_lamp_wall_left).turn_off();
+          call_2.perform();
+          id(save_state_bedroom_led_lamp_wall_left)=true;
+        }
+        id(save_state_bedroom_led_lamp_wall_right)=false;
+        if (id(bedroom_led_lamp_wall_right).remote_values.is_on()) {
+          auto call_2 = id(bedroom_led_lamp_wall_right).turn_off();
+          call_2.perform();
+          id(save_state_bedroom_led_lamp_wall_right)=true;
+        }
+    turn_on_action:  
+      lambda: |-
+        if(id(save_state_bedroom_led_strips_ceiling)){
+          auto call = id(bedroom_led_strips_ceiling).turn_on();
+          call.perform();
+        }
+        if(id(save_state_bedroom_led_lamp_wall_left)){
+          auto call_2 = id(bedroom_led_lamp_wall_left).turn_on();
+          call_2.perform();
+        }
+        if(id(save_state_bedroom_led_lamp_wall_right)){
+          auto call_2 = id(bedroom_led_lamp_wall_right).turn_on();
+          call_2.perform();
+        }
+
+# переключатель всего
+  - platform: template
+    id: 'bedroom_full_turn_off'
+    name: "bedroom full turn off"
+    icon: "mdi:alert"
+    lambda: |-
+      if (id(is_on_light).state || id(is_on).state) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_off_action:
+      lambda: |-
+        id(bedroom_relay1).turn_off();
+        id(bedroom_relay2).turn_off();
+        id(bedroom_relay3).turn_off();
+        id(bedroom_relay4).turn_off();
+        id(bedroom_relay5).turn_off();
+
+        id(bedroom_full_turn_off_light).turn_off();
+    turn_on_action:  
+      lambda: |-
+        id(bedroom_relay1).turn_on();
+        id(bedroom_relay2).turn_on();
+        id(bedroom_relay3).turn_on();
+        id(bedroom_relay4).turn_on();
+        id(bedroom_relay5).turn_on();
+
+        id(bedroom_full_turn_off_light).turn_on();

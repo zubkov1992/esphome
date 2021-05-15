@@ -1,0 +1,101 @@
+i2c:
+  sda: $sda_pin
+  scl: $scl_pin
+  scan: false
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_passwd
+  fast_connect: true
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+display:
+  - platform: lcd_pcf8574
+    dimensions: 16x2
+    address: 0x27
+    lambda: |-
+      if (id(status_connect).state) {
+        //время
+        it.strftime(1, 0, "%H:%M %d/%m/%y", id(homeassistant_time).now());
+        //Темппература на улице
+        if(id(outside_temp).has_state()) it.printf(4, 1, "%.1f", id(outside_temp).state);
+        //Температура с датчика
+        if (id(this_temp).has_state()) it.printf(11, 1, "%.1f", id(this_temp).state);
+       } else {
+        it.print(1, 0, "no connection");
+       }
+
+
+light :
+  #подсветка дисплея
+  - platform : monochromatic
+    name : "${devicename}   backlight"
+    output : output_backlight
+    id: light_backlight
+    internal: true
+  # rgb светодиод
+  - platform : rgb
+    name : "${devicename} rgb led"
+    red : output_red
+    green : output_green
+    blue : output_blue
+
+output :
+  #подсветка дисплея
+  - platform : esp8266_pwm
+    id : output_backlight
+    pin : $backlight_pin
+  #rgb светодиод
+  - platform : esp8266_pwm
+    id : output_red
+    pin : $red_pin
+    max_power : 90%
+  - platform : esp8266_pwm
+    id : output_green
+    pin : $green_pin
+    max_power : 90%
+  - platform : esp8266_pwm
+    id : output_blue
+    pin : $blue_pin
+    max_power : 90%
+
+sensor:
+  #датчик яркости
+  - platform: bh1750
+    name: "${devicename} illuminance"
+    address: 0x23
+    update_interval: 10s
+    # регулировка яркости подсветки
+    on_value :
+      then :
+      - light.turn_on :
+          id : light_backlight
+          brightness : !lambda "if (x <= 20.0 )   return   0.5;   else if (x <= 40.0)   return   0.7; else if (x <= 80.0) return 0.9; else return 0;"
+  # датчик температуры и влажности
+  - platform: htu21d
+    temperature:
+      name: "${devicename} temperature"
+      id: this_temp
+    humidity:
+      name: "${devicename} humidity"
+      id: this_humid
+    update_interval: 20min
+  # датчик температуры на улице
+  - platform : homeassistant
+    id : outside_temp
+    entity_id : sensor.weather_temperature
+    internal : true
+
+binary_sensor:
+  # датчик движения
+  - platform: gpio
+    pin : $pir_pin
+    name : "${devicename} pir"
+    device_class: motion
+  # статус соединения
+  - platform: status
+    id: status_connect
+    internal : true

@@ -1,0 +1,98 @@
+i2c:
+  sda: $sda_pin
+  scl: $scl_pin
+  scan: false
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_passwd
+  fast_connect: true
+
+pca9685:
+  frequency: 1000
+  id: 'pca9685_hub'
+  address: 0x42
+
+output:
+  - platform: pca9685
+    pca9685_id: 'pca9685_hub'
+    id: 'pca9685_channel0'
+    channel: 0
+  - platform: pca9685
+    pca9685_id: 'pca9685_hub'
+    id: 'pca9685_channel1'  
+    channel: 1
+  - platform: pca9685
+    pca9685_id: 'pca9685_hub'
+    id: 'pca9685_channel2'
+    channel: 2
+  - platform: pca9685
+    pca9685_id: 'pca9685_hub'
+    id: 'pca9685_channel3'
+    channel: 3
+  - platform: pca9685
+    pca9685_id: 'pca9685_hub'
+    id: 'pca9685_channel4'
+    channel: 4
+  - platform: pca9685
+    pca9685_id: 'pca9685_hub'
+    id: 'pca9685_channel5'
+    channel: 5
+  - platform: pca9685
+    pca9685_id: 'pca9685_hub'
+    id: 'pca9685_channel6'
+    channel: 6
+  - platform: pca9685
+    pca9685_id: 'pca9685_hub'
+    id: 'pca9685_channel7'
+    channel: 7
+  - platform: pca9685
+    pca9685_id: 'pca9685_hub'
+    id: 'pca9685_channel8'
+    channel: 8
+  # - platform: pca9685
+  #   pca9685_id: 'pca9685_hub'
+  #   id: 'pca9685_channel9'
+  #   channel: 9
+  # - platform: pca9685
+  #   pca9685_id: 'pca9685_hub'
+  #   id: 'pca9685_channel10'
+  #   channel: 10
+  # - platform: pca9685
+  #   pca9685_id: 'pca9685_hub'
+  #   id: 'pca9685_channel11'
+  #   channel: 11
+  #     - platform: pca9685
+  #   pca9685_id: 'pca9685_hub'
+  #   id: 'pca9685_channel12'
+  #   channel: 12
+  #     - platform: pca9685
+  #   pca9685_id: 'pca9685_hub'
+  #   id: 'pca9685_channel13'
+  #   channel: 13
+  #     - platform: pca9685
+  #   pca9685_id: 'pca9685_hub'
+  #   id: 'pca9685_channel14'
+  #   channel: 14
+  #     - platform: pca9685
+  #   pca9685_id: 'pca9685_hub'
+  #   id: 'pca9685_channel15'
+    # channel: 15
+
+mcp23017:
+  id: 'mcp23017_hub'
+  address: 0x20
+
+font:
+  - file: "9041.ttf"
+    id: display_font_20
+    size: 20
+  - file: "9041.ttf"
+    id: display_font_33
+    size: 33
+  - file: "9041.ttf"
+    id: display_font_14
+    size: 14
+  - file: "9041.ttf"
+    id: display_font_10
+    size: 10

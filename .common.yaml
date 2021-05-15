@@ -1,0 +1,13 @@
+esphome:
+  name: $devicename
+  platform: $platform
+  board: $board
+
+api:
+
+ota:
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+    timezone: Asia/Omsk

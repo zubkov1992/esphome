@@ -1,0 +1,24 @@
+{
+  "storage_version": 1,
+  "name": "test",
+  "comment": null,
+  "esphome_version": "1.15.0-dev",
+  "src_version": 1,
+  "arduino_version": "espressif8266@2.2.3",
+  "address": "test.local",
+  "esp_platform": "ESP8266",
+  "board": "nodemcuv2",
+  "build_path": "/config/esphome/test",
+  "firmware_bin_path": "/data/test/.pioenvs/test/firmware.bin",
+  "loaded_integrations": [
+    "api",
+    "async_tcp",
+    "captive_portal",
+    "esphome",
+    "logger",
+    "network",
+    "ota",
+    "web_server_base",
+    "wifi"
+  ]
+}
