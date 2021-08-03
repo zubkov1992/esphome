@@ -1,3 +1,8 @@
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+    timezone: Asia/Omsk
+
 i2c:
   sda: $sda_pin
   scl: $scl_pin
