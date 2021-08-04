@@ -13,6 +13,9 @@ globals:
   - id: rgb_led_color
     type: int
     initial_value: '0'
+  - id: led_water_temperature
+    type: int
+    initial_value: '0'
   - id: water_ready
     type: bool
     initial_value: "false"
@@ -55,6 +58,7 @@ switch:
       - light.turn_off: led_70
       - light.turn_off: led_80
       - light.turn_off: led_90
+      - light.turn_off: backlight
       - delay: 40s
       - switch.turn_on: ntc_vcc
       - component.update: source_sensor
@@ -214,6 +218,12 @@ switch:
 
 
 light:
+    - platform: rgb
+      id: backlight
+      name: "Backlight"
+      red: out_led_red
+      green: out_led_green
+      blue: out_led_blue
     - platform: binary
       id: led_60
       output: out_led_60
@@ -234,21 +244,6 @@ light:
       output: out_led_90
       restore_mode: ALWAYS_OFF
       internal: true 
-    - platform: binary
-      id: led_red
-      output: out_led_red
-      restore_mode: ALWAYS_OFF
-      internal: true
-    - platform: binary
-      id: led_green
-      output: out_led_green
-      restore_mode: ALWAYS_OFF
-      internal: true
-    - platform: binary
-      id: led_blue
-      output: out_led_blue
-      restore_mode: ALWAYS_OFF
-      internal: true
 
 output:
     - platform: gpio
@@ -271,17 +266,17 @@ output:
       pin: 
         number: GPIO5
         inverted: true
-    - platform: gpio
+    - platform: ledc
       id: out_led_red
       pin: 
         number: GPIO17
         inverted: true
-    - platform: gpio
+    - platform: ledc
       id: out_led_green
       pin: 
         number: GPIO16
         inverted: true
-    - platform: gpio
+    - platform: ledc
       id: out_led_blue
       pin: 
         number: GPIO4
@@ -354,63 +349,102 @@ sensor:
               if (id(water_heating_90).state) id(water_heating_90).turn_off();
             }
 
-            if (id(water_temperature).state < 102.0 && id(water_temperature).state > 90.0 && id(rgb_led_color) != 6) {
-              id(rgb_led_color) = 6;
-              auto call = id(led_red).turn_on();
-              call.perform();
-              auto call1 = id(led_green).turn_off();
-              call1.perform();
-              auto call2 = id(led_blue).turn_off();
-              call2.perform();
-            } else if (id(water_temperature).state < 90.0 && id(water_temperature).state > 80.0 && id(rgb_led_color) != 5) {
+            if (id(water_temperature).state > 90.0 && id(rgb_led_color) != 5 && id(relay).state) {
               id(rgb_led_color) = 5;
-              auto call = id(led_red).turn_on();
+              auto call = id(backlight).turn_on();
+              call.set_rgb(1.0,0.0,0.0);
+              call.set_brightness(1.0);
+              call. set_transition_length(4000); 
               call.perform();
-              auto call1 = id(led_green).turn_on();
-              call1.perform();
-              auto call2 = id(led_blue).turn_off();
-              call2.perform();
-            } else if (id(water_temperature).state < 80.0 && id(water_temperature).state > 70.0  && id(rgb_led_color) != 4) {
+            } else if (id(water_temperature).state < 90.0 && id(water_temperature).state > 80.0 && id(rgb_led_color) != 4 && id(relay).state) {
               id(rgb_led_color) = 4;
-              auto call = id(led_red).turn_on();
+              auto call = id(backlight).turn_on();
+              call.set_rgb(1.0,0.46,0.28);
+              call.set_brightness(1.0);
+              call. set_transition_length(4000); 
               call.perform();
-              auto call1 = id(led_green).turn_off();
-              call1.perform();
-              auto call2 = id(led_blue).turn_on();
-              call2.perform();
-            } else if (id(water_temperature).state < 70.0 && id(water_temperature).state > 60.0  && id(rgb_led_color) != 3) {
+            } else if (id(water_temperature).state < 80.0 && id(water_temperature).state > 70.0  && id(rgb_led_color) != 3 && id(relay).state) {
               id(rgb_led_color) = 3;
-              auto call = id(led_red).turn_off();
+              auto call = id(backlight).turn_on();
+              call.set_rgb(1.0,0.57,0.14);
+              call.set_brightness(1.0);
+              call. set_transition_length(4000); 
               call.perform();
-              auto call1 = id(led_green).turn_off();
-              call1.perform();
-              auto call2 = id(led_blue).turn_on();
-              call2.perform();
-            } else if (id(water_temperature).state < 60.0 && id(water_temperature).state > 50.0  && id(rgb_led_color) != 2) {
+            } else if (id(water_temperature).state < 70.0 && id(water_temperature).state > 60.0  && id(rgb_led_color) != 2 && id(relay).state) {
               id(rgb_led_color) = 2;
-              auto call = id(led_red).turn_off();
+              auto call = id(backlight).turn_on();
+              call.set_rgb(1.0,0.85,0.43);
+              call.set_brightness(1.0);
+              call. set_transition_length(4000); 
               call.perform();
-              auto call1 = id(led_green).turn_on();
-              call1.perform();
-              auto call2 = id(led_blue).turn_on();
-              call2.perform();
-            } else if ((id(water_temperature).state < 50.0 && id(water_temperature).state > 40.0  && id(rgb_led_color) != 1) || (id(water_temperature).state < 50.0 && id(relay).state)) {
+            } else if (id(water_temperature).state < 60.0 && id(water_temperature).state > 50.0  && id(rgb_led_color) != 1 && id(relay).state) {
               id(rgb_led_color) = 1;
-              auto call = id(led_red).turn_on();
+              auto call = id(backlight).turn_on();
+              call.set_rgb(1.0,1.0,0.28);
+              call.set_brightness(1.0);
+              call. set_transition_length(4000); 
               call.perform();
-              auto call1 = id(led_green).turn_on();
-              call1.perform();
-              auto call2 = id(led_blue).turn_on();
-              call2.perform();
-            } else if (id(water_temperature).state < 40.0 && id(rgb_led_color) != 0 && !id(relay).state) {
+            } else if (id(water_temperature).state < 50.0 && id(relay).state && id(rgb_led_color) != 0) {
               id(rgb_led_color) = 0;
-              auto call = id(led_red).turn_off();
+              auto call = id(backlight).turn_on();
+              call.set_rgb(0.43,0.57,1.0);
+              call.set_brightness(1.0);
+              call. set_transition_length(4000); 
               call.perform();
-              auto call1 = id(led_green).turn_off();
-              call1.perform();
-              auto call2 = id(led_blue).turn_off();
-              call2.perform();
             }
+
+            if (id(water_temperature).state > 85.0 && id(led_water_temperature) != 4 && !id(relay).state) {
+              id(led_water_temperature) = 4;
+              auto call = id(led_60).turn_on();
+              call.perform();
+              auto call1 = id(led_70).turn_on();
+              call1.perform();
+              auto call2 =  id(led_80).turn_on();
+              call2.perform();
+              auto call3 = id(led_90).turn_on();
+              call3.perform();
+            } else if (id(water_temperature).state < 85.0 && id(water_temperature).state > 75.0  && id(led_water_temperature) != 3 && !id(relay).state) {
+              id(led_water_temperature) = 3;
+              auto call = id(led_60).turn_on();
+              call.perform();
+              auto call1 = id(led_70).turn_on();
+              call1.perform();
+              auto call2 =  id(led_80).turn_on();
+              call2.perform();
+              auto call3 = id(led_90).turn_off();
+              call3.perform();
+            } else if (id(water_temperature).state < 75.0 && id(water_temperature).state > 65.0  && id(led_water_temperature) != 2 && !id(relay).state) {
+              id(led_water_temperature) = 2;
+              auto call = id(led_60).turn_on();
+              call.perform();
+              auto call1 = id(led_70).turn_on();
+              call1.perform();
+              auto call2 =  id(led_80).turn_off();
+              call2.perform();
+              auto call3 = id(led_90).turn_off();
+              call3.perform();
+            } else if (id(water_temperature).state < 65.0 && id(water_temperature).state > 55.0  && id(led_water_temperature) != 1 && !id(relay).state) {
+              id(led_water_temperature) = 1;
+              auto call = id(led_60).turn_on();
+              call.perform();
+              auto call1 = id(led_70).turn_off();
+              call1.perform();
+              auto call2 =  id(led_80).turn_off();
+              call2.perform();
+              auto call3 = id(led_90).turn_off();
+              call3.perform();
+            } else if (id(water_temperature).state < 55.0 && id(led_water_temperature) != 0 && !id(relay).state) {
+              id(led_water_temperature) = 0;
+              auto call = id(led_60).turn_off();
+              call.perform();
+              auto call1 = id(led_70).turn_off();
+              call1.perform();
+              auto call2 =  id(led_80).turn_off();
+              call2.perform();
+              auto call3 = id(led_90).turn_off();
+              call3.perform();
+            }
+
 
       - if:
           condition:
