@@ -1,0 +1,88 @@
+esphome:
+  name: main_controller_pantry
+  platform: ESP8266
+  board: nodemcuv2
+  on_boot:
+    priority: 800
+    then:
+      - switch.turn_on: automatisation_switch
+
+api:
+
+ota:
+
+logger:
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_passwd
+  fast_connect: true
+
+binary_sensor:
+  - platform: gpio
+    pin: D5
+    name: "panry pir"
+    id: pir_1
+    device_class: motion
+    on_press:
+      then:
+        if:
+          condition:
+            switch.is_on: automatisation_switch
+          then:
+            script.execute: script_motion
+  - platform: gpio
+    pin: D6
+    internal: true
+    id: pir_2
+    device_class: motion
+    on_press:
+      then:
+        if:
+          condition:
+            switch.is_on: automatisation_switch
+          then:
+            script.execute: script_motion
+
+script:
+  - id: script_motion
+    mode: restart
+    then:
+      - light.turn_on: light_main
+      - delay: 20s
+      - light.turn_off: light_main
+
+output:
+  - platform: esp8266_pwm
+    id: light_output
+    pin: D7
+
+light:
+  - platform: monochromatic
+#   internal: true
+    name: "panry light"
+    output: light_output
+    id: light_main
+
+i2c:
+  sda: D2
+  scl: D1
+  scan: false
+
+sensor:
+  - platform: htu21d
+    temperature:
+      name: "panry temperature"
+      id: panry_temperature
+    humidity:
+      name: "panry humidity"
+      id: panry_humidity
+    update_interval: 120s
+
+switch:
+  - platform: template
+    name: "automatisation switch"
+    icon: "mdi:lightbulb-auto-outline"
+    id: automatisation_switch
+    optimistic: true
+    restore_state: true

@@ -333,9 +333,9 @@ sensor:
     name: water temperature
     sensor: resistance_sensor
     calibration:
-      - 834Ohm -> 26°C
-      - 1333Ohm -> 37°C
-      - 18.7kOhm -> 100°C
+      - 3033Ohm -> 52°C
+      - 7785Ohm -> 79°C
+      - 15.2kOhm -> 100°C
     on_value:
       then:
       - delay: !lambda "if (id(water_temperature).state >= id(desired_water_temperature) && id(relay).state) return 1500; else return 0;"

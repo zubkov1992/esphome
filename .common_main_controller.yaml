@@ -1,11 +1,16 @@
 time:
-  - platform: homeassistant
-    id: homeassistant_time
-    timezone: Asia/Omsk
+- platform: sntp
+  id: sntp_time
+  timezone: "UTC-6"
 
 i2c:
-  sda: $sda_pin
-  scl: $scl_pin
+- id: bus_a
+  sda: GPIO21
+  scl: GPIO22
+  scan: false
+- id: bus_b
+  sda: GPIO27
+  scl: GPIO26
   scan: false
 
 wifi:
@@ -15,6 +20,7 @@ wifi:
 
 pca9685:
   frequency: 1000
+  i2c_id: bus_a
   id: 'pca9685_hub'
   address: 0x42
 
@@ -86,6 +92,7 @@ output:
 
 mcp23017:
   id: 'mcp23017_hub'
+  i2c_id: bus_a
   address: 0x20
 
 font:

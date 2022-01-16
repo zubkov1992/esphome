@@ -2,8 +2,6 @@ substitutions:
   devicename: main_controller_bedroom
   platform: ESP32
   board: nodemcu-32s
-  sda_pin: GPIO21
-  scl_pin: GPIO22
 
 globals:
   - id: encoder_mode_id
@@ -259,11 +257,13 @@ binary_sensor:
 sensor:
   # датчик освещения
   - platform: bh1750
+    i2c_id: bus_b
     name: "bedroom illuminance"
     id: bedroom_illuminance
     update_interval: 60s
   # датчик владности и температуры
   - platform: htu21d
+    i2c_id: bus_b
     temperature:
       name: "bedroom temperature"
       id: bedroom_temperature
@@ -376,13 +376,14 @@ sensor:
 
 display:
   - platform: ssd1306_i2c
+    i2c_id: bus_b
     id: oled_display
     model: "SH1106 128x32"
     pages:
       - id: page_main
         lambda: |-
           if (id(status_connect).state) {
-            it.strftime(0, 28, id(display_font_33), TextAlign::BASELINE_LEFT, "%H:%M", id(homeassistant_time).now());
+            it.strftime(0, 28, id(display_font_33), TextAlign::BASELINE_LEFT, "%H:%M", id(sntp_time).now());
             if (id(bedroom_temperature).has_state()) it.printf(97, 28, id(display_font_14), TextAlign::BASELINE_LEFT, "%2.0fC", id(bedroom_temperature).state);
           } else {
             it.print(5, 10, id(display_font_20), "no connect");
@@ -424,7 +425,7 @@ switch:
     icon: "mdi:power-socket-eu"
     restore_mode: RESTORE_DEFAULT_ON
     pin:
-      mcp23017: mcp23017_hub
+      mcp23xxx: mcp23017_hub
       number: 0
   - platform: gpio
     id: 'bedroom_relay2'
@@ -432,7 +433,7 @@ switch:
     icon: "mdi:power-socket-eu"
     restore_mode: RESTORE_DEFAULT_ON
     pin:
-      mcp23017: mcp23017_hub
+      mcp23xxx: mcp23017_hub
       number: 1
   - platform: gpio
     id: 'bedroom_relay3'
@@ -440,7 +441,7 @@ switch:
     icon: "mdi:power-socket-eu"
     restore_mode: RESTORE_DEFAULT_ON
     pin:
-      mcp23017: mcp23017_hub
+      mcp23xxx: mcp23017_hub
       number: 2
   - platform: gpio
     id: 'bedroom_relay4'
@@ -448,7 +449,7 @@ switch:
     icon: "mdi:power-socket-eu"
     restore_mode: RESTORE_DEFAULT_ON
     pin:
-      mcp23017: mcp23017_hub
+      mcp23xxx: mcp23017_hub
       number: 3
   - platform: gpio
     id: 'bedroom_relay5'
@@ -456,7 +457,7 @@ switch:
     icon: "mdi:air-humidifier"
     restore_mode: RESTORE_DEFAULT_ON
     pin:
-     mcp23017: mcp23017_hub
+     mcp23xxx: mcp23017_hub
      number: 4
      inverted: yes
 
